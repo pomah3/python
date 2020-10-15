@@ -1,6 +1,6 @@
 import random
 import typing as tp
-
+from math import sqrt
 
 def is_prime(n: int) -> bool:
     """
@@ -13,9 +13,15 @@ def is_prime(n: int) -> bool:
     >>> is_prime(8)
     False
     """
-    # PUT YOUR CODE HERE
-    pass
 
+    if n == 1:
+        return False
+    
+    for i in range(2, int(sqrt(n))+1):
+        if n % i == 0:
+            return False
+    else:
+        return True    
 
 def gcd(a: int, b: int) -> int:
     """
@@ -26,9 +32,25 @@ def gcd(a: int, b: int) -> int:
     >>> gcd(3, 7)
     1
     """
-    # PUT YOUR CODE HERE
+    
+    if b == 0:
+        return a
+    else:
+        return gcd(b, a % b)
+
     pass
 
+
+def extended_gcd(a, b):  
+    if a == 0 :   
+        return b,0,1
+             
+    gcd,x1,y1 = extended_gcd(b%a, a)  
+     
+    x = y1 - (b//a) * x1  
+    y = x1  
+     
+    return gcd,x,y 
 
 def multiplicative_inverse(e: int, phi: int) -> int:
     """
@@ -38,9 +60,10 @@ def multiplicative_inverse(e: int, phi: int) -> int:
     >>> multiplicative_inverse(7, 40)
     23
     """
-    # PUT YOUR CODE HERE
-    pass
 
+    (gcd, x, y) = extended_gcd(e, phi)
+
+    return x % phi
 
 def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[int, int]]:
     if not (is_prime(p) and is_prime(q)):
@@ -49,10 +72,10 @@ def generate_keypair(p: int, q: int) -> tp.Tuple[tp.Tuple[int, int], tp.Tuple[in
         raise ValueError("p and q cannot be equal")
 
     # n = pq
-    # PUT YOUR CODE HERE
+    n = p*q
 
     # phi = (p-1)(q-1)
-    # PUT YOUR CODE HERE
+    phi = (p-1) * (q - 1)
 
     # Choose an integer e such that e and phi(n) are coprime
     e = random.randrange(1, phi)
