@@ -57,7 +57,7 @@ def decrypt_vigenere(ciphertext: str, keyword: str) -> str:
         c_text = ciphertext[i]
         c_key = keyword[i % len(keyword)]
 
-        if not c_text.isalpha:
+        if not c_text.isalpha():
             plaintext += c_text
             continue
 
