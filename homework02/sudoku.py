@@ -1,5 +1,6 @@
 from typing import Tuple, List, Set, Optional
-
+from random import randint, shuffle
+from copy import deepcopy
 
 def read_sudoku(filename: str) -> List[List[str]]:
     """ Прочитать Судоку из указанного файла """
@@ -28,7 +29,21 @@ def group(values: List[str], n: int) -> List[List[str]]:
     >>> group([1,2,3,4,5,6,7,8,9], 3)
     [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     """
-    pass
+    ret = []
+    i = 0
+    while i < len(values):
+        arr = []
+
+        for j in range(n):
+            if i >= len(values):
+                break
+            
+            arr.append(values[i])
+            i += 1
+        
+        ret.append(arr)
+
+    return ret
 
 
 def get_row(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
@@ -41,7 +56,8 @@ def get_row(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
     >>> get_row([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']], (2, 0))
     ['.', '8', '9']
     """
-    pass
+    
+    return grid[pos[0]]
 
 
 def get_col(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
@@ -54,8 +70,14 @@ def get_col(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
     >>> get_col([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']], (0, 2))
     ['3', '6', '9']
     """
-    pass
 
+    i = pos[1]
+    arr = []
+
+    for row in grid:
+        arr.append(row[i])
+    
+    return arr
 
 def get_block(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
     """ Возвращает все значения из квадрата, в который попадает позиция pos
@@ -68,8 +90,17 @@ def get_block(grid: List[List[str]], pos: Tuple[int, int]) -> List[str]:
     >>> get_block(grid, (8, 8))
     ['2', '8', '.', '.', '.', '5', '.', '7', '9']
     """
-    pass
+    
+    block_x = pos[0] // 3 * 3
+    block_y = pos[1] // 3 * 3
 
+    arr = []
+
+    for i in range(block_x, block_x + 3):
+        for j in range(block_y, block_y + 3):
+            arr.append(grid[i][j])
+    
+    return arr
 
 def find_empty_positions(grid: List[List[str]]) -> Optional[Tuple[int, int]]:
     """ Найти первую свободную позицию в пазле
@@ -81,7 +112,11 @@ def find_empty_positions(grid: List[List[str]]) -> Optional[Tuple[int, int]]:
     >>> find_empty_positions([['1', '2', '3'], ['4', '5', '6'], ['.', '8', '9']])
     (2, 0)
     """
-    pass
+
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if grid[i][j] == '.':
+                return (i, j)
 
 
 def find_possible_values(grid: List[List[str]], pos: Tuple[int, int]) -> Set[str]:
@@ -95,8 +130,13 @@ def find_possible_values(grid: List[List[str]], pos: Tuple[int, int]) -> Set[str
     >>> values == {'2', '5', '9'}
     True
     """
-    pass
 
+    digits = set(map(str, set(range(1, 10))))
+    not_in_col = digits - set(get_col(grid, pos))
+    not_in_row = digits - set(get_row(grid, pos))
+    not_in_block = digits - set(get_block(grid, pos))
+
+    return not_in_col & not_in_block & not_in_row
 
 def solve(grid: List[List[str]]) -> Optional[List[List[str]]]:
     """ Решение пазла, заданного в grid """
@@ -111,14 +151,53 @@ def solve(grid: List[List[str]]) -> Optional[List[List[str]]]:
     >>> solve(grid)
     [['5', '3', '4', '6', '7', '8', '9', '1', '2'], ['6', '7', '2', '1', '9', '5', '3', '4', '8'], ['1', '9', '8', '3', '4', '2', '5', '6', '7'], ['8', '5', '9', '7', '6', '1', '4', '2', '3'], ['4', '2', '6', '8', '5', '3', '7', '9', '1'], ['7', '1', '3', '9', '2', '4', '8', '5', '6'], ['9', '6', '1', '5', '3', '7', '2', '8', '4'], ['2', '8', '7', '4', '1', '9', '6', '3', '5'], ['3', '4', '5', '2', '8', '6', '1', '7', '9']]
     """
-    pass
 
+    pos = find_empty_positions(grid)
+
+    if pos is None:
+        return grid
+
+    possibles = list(find_possible_values(grid, pos))
+    shuffle(possibles) # need to randomly shuffle so that generate func can work normally
+
+    if len(possibles) == 0:
+        return None
+
+    i, j = pos
+    for p in possibles:
+        grid[i][j] = p
+        
+        solved = solve(grid)
+        if solved:
+            return solved
+
+    grid[i][j] = '.'
+
+    return None
 
 def check_solution(solution: List[List[str]]) -> bool:
     """ Если решение solution верно, то вернуть True, в противном случае False """
-    # TODO: Add doctests with bad puzzles
-    pass
+    digits = set(map(str, set(range(1, 10))))
+    
+    for i in range(len(solution)):
+        if type(solution[i]) != list:
+            return False
 
+        for j in range(len(solution[i])):
+            pos = (i, j)
+
+            block = set(get_block(solution, pos))
+            row = set(get_row(solution, pos))
+            col = set(get_col(solution, pos))
+
+            right = block == digits and \
+                    row   == digits and \
+                    col   == digits
+            
+            if not right:
+                return False
+    
+    return True
 
 def generate_sudoku(N: int) -> List[List[str]]:
     """ Генерация судоку заполненного на N элементов
@@ -142,7 +221,19 @@ def generate_sudoku(N: int) -> List[List[str]]:
     >>> check_solution(solution)
     True
     """
-    pass
+    grid = [["." for i in range(9)] for i in range(9)]
+    solved = solve(grid)
+
+    need_to_remove = 9*9 - min(N, 9*9)
+
+    for _i in range(need_to_remove):
+        i, j = randint(0, 8), randint(0, 8)
+        while grid[i][j] == '.':
+            i, j = randint(0, 8), randint(0, 8)
+
+        grid[i][j] = '.'
+
+    return grid
 
 
 if __name__ == '__main__':
