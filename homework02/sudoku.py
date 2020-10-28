@@ -1,5 +1,6 @@
 from typing import Tuple, List, Set, Optional
-
+from random import randint, shuffle
+from copy import deepcopy
 
 def read_sudoku(filename: str) -> List[List[str]]:
     """ Прочитать Судоку из указанного файла """
@@ -130,7 +131,7 @@ def find_possible_values(grid: List[List[str]], pos: Tuple[int, int]) -> Set[str
     True
     """
 
-    digits = map(str, set(range(1, 10)))
+    digits = set(map(str, set(range(1, 10))))
     not_in_col = digits - set(get_col(grid, pos))
     not_in_row = digits - set(get_row(grid, pos))
     not_in_block = digits - set(get_block(grid, pos))
@@ -151,11 +152,52 @@ def solve(grid: List[List[str]]) -> Optional[List[List[str]]]:
     [['5', '3', '4', '6', '7', '8', '9', '1', '2'], ['6', '7', '2', '1', '9', '5', '3', '4', '8'], ['1', '9', '8', '3', '4', '2', '5', '6', '7'], ['8', '5', '9', '7', '6', '1', '4', '2', '3'], ['4', '2', '6', '8', '5', '3', '7', '9', '1'], ['7', '1', '3', '9', '2', '4', '8', '5', '6'], ['9', '6', '1', '5', '3', '7', '2', '8', '4'], ['2', '8', '7', '4', '1', '9', '6', '3', '5'], ['3', '4', '5', '2', '8', '6', '1', '7', '9']]
     """
 
+    pos = find_empty_positions(grid)
+
+    if pos is None:
+        return grid
+
+    possibles = list(find_possible_values(grid, pos))
+    shuffle(possibles) # need to randomly shuffle so that generate func can work normally
+
+    if len(possibles) == 0:
+        return None
+
+    i, j = pos
+    for p in possibles:
+        grid[i][j] = p
+        
+        solved = solve(grid)
+        if solved:
+            return solved
+
+    grid[i][j] = '.'
+
+    return None
 
 def check_solution(solution: List[List[str]]) -> bool:
     """ Если решение solution верно, то вернуть True, в противном случае False """
-    # TODO: Add doctests with bad puzzles
+    digits = set(map(str, set(range(1, 10))))
+    
+    for i in range(len(solution)):
+        if type(solution[i]) != list:
+            return False
 
+        for j in range(len(solution[i])):
+            pos = (i, j)
+
+            block = set(get_block(solution, pos))
+            row = set(get_row(solution, pos))
+            col = set(get_col(solution, pos))
+
+            right = block == digits and \
+                    row   == digits and \
+                    col   == digits
+            
+            if not right:
+                return False
+    
+    return True
 
 def generate_sudoku(N: int) -> List[List[str]]:
     """ Генерация судоку заполненного на N элементов
@@ -179,7 +221,19 @@ def generate_sudoku(N: int) -> List[List[str]]:
     >>> check_solution(solution)
     True
     """
-    pass
+    grid = [["." for i in range(9)] for i in range(9)]
+    solved = solve(grid)
+
+    need_to_remove = 9*9 - min(N, 9*9)
+
+    for _i in range(need_to_remove):
+        i, j = randint(0, 8), randint(0, 8)
+        while grid[i][j] == '.':
+            i, j = randint(0, 8), randint(0, 8)
+
+        grid[i][j] = '.'
+
+    return grid
 
 
 if __name__ == '__main__':
