@@ -210,11 +210,7 @@ class SudokuTestCase(unittest.TestCase):
         ]
         self.assertFalse(sudoku.check_solution(bad_solution))
 
-<<<<<<< HEAD
-        bad_solution = [str(v) for v in range(1, 10)] * 9
-=======
         bad_solution = [[str(v) for v in range(1, 10)]] * 9
->>>>>>> prepod/master
         self.assertFalse(sudoku.check_solution(bad_solution))
 
         bad_solution = [[str(v)] * 9 for v in range(1, 10)]
