@@ -1,9 +1,10 @@
 from pathlib import Path
 from os import makedirs, getenv
 
-
 def repo_create(path: Path) -> Path:
     DIRNAME = getenv("GIT_DIR") or ".git"
+
+    path = Path(path)
 
     if path.is_file():
         raise Exception(f"{path} is not a directory")
@@ -30,7 +31,10 @@ def repo_create(path: Path) -> Path:
 
     return gitdir
 
-def repo_find(path: Path = Path(".")) -> Path:
+def repo_find(path: Path = None) -> Path:
+    if not path:
+        path = Path(".")
+    
     DIRNAME = getenv("GIT_DIR") or ".git"
     
     path = path.absolute()
