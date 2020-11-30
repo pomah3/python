@@ -1,6 +1,7 @@
 from pathlib import Path
 from pyvcs.repo import repo_find
 import struct
+import hashlib
 
 def add():
     pass
@@ -37,8 +38,39 @@ def read_index(gitdir):
 def update_index():
     pass
 
-def write_index():
-    pass
+def write_index(gitdir, entries):
+    index = Path(gitdir) / "index"
+
+    dirc = b"DIRC"
+    version = 2
+    entries_count = len(entries)
+
+    with open(index, "wb") as file:
+        header = struct.pack(">4sII", dirc, version, entries_count)
+        file.write(header)
+
+        for entry in entries:
+            entry_tuple = (
+                entry.ctime_s,
+                entry.ctime_n,
+                entry.mtime_s,
+                entry.mtime_n,
+                entry.dev,
+                entry.ino,
+                entry.mode,
+                entry.uid,
+                entry.gid,
+                entry.size,
+                entry.sha1,
+                entry.flags.to_bytes(2, "big"),
+            )
+            file.write(struct.pack(">10I20s2s", *entry_tuple))
+            filename = entry.name.encode() 
+            file.write(filename + b'\x00' * (2 + 8 - len(filename) % 8))
+    with open(index, "rb") as file:
+        hash = hashlib.sha1(file.read()).digest()
+    with open(index, "ab") as file:
+        file.write(hash)
 
 class GitIndexEntry:
     def __init__(self, ctime_s, ctime_n, mtime_s, mtime_n, dev, ino, mode, uid, gid, size, sha1, flags, name):
