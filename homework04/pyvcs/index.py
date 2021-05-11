@@ -5,8 +5,8 @@ import hashlib
 from pyvcs.objects import hash_object
 import os
 
-def add():
-    pass
+def add(gitdir, files):
+    update_index(gitdir, files)
 
 def read_index(gitdir):
     index = Path(gitdir) / "index"
@@ -22,7 +22,7 @@ def read_index(gitdir):
 
     begin = 12
     for i in range(entries_count):
-        entry_tuple = struct.unpack(">10I20s2s", content[12:12+62])
+        entry_tuple = struct.unpack(">10I20s2s", content[begin:begin+62])
         begin += 62
 
         filename = b''
@@ -33,16 +33,20 @@ def read_index(gitdir):
 
 
         entry = GitIndexEntry(*entry_tuple, filename.decode())
+
         entries.append(entry)
 
     return entries
 
-def update_index(gitdir, files):
+def update_index(gitdir, files, write=True):
     entries = {entry.name: entry for entry in read_index(gitdir)}
     for file in files:
+        if not Path(file).exists():
+            continue
+
         with open(file, "rb") as f:
             content = f.read()
-        
+
         hash = hash_object(content, "blob", write=True)
 
         stat = os.stat(file)
@@ -58,7 +62,7 @@ def update_index(gitdir, files):
             uid = stat.st_uid,
             gid = stat.st_gid,
             size = stat.st_size,
-            sha1 = hash.encode(),
+            sha1 = bytes.fromhex(hash),
             flags = 7,
             name = file
         )
@@ -69,7 +73,7 @@ def update_index(gitdir, files):
  
 def write_index(gitdir, entries):
     entries = list(entries)
-    entries.sort(key=lambda x: x.name)
+    entries.sort(key=lambda x: Path(x.name))
 
     index = Path(gitdir) / "index"
 
@@ -94,7 +98,7 @@ def write_index(gitdir, entries):
                 entry.gid,
                 entry.size,
                 entry.sha1,
-                entry.flags.to_bytes(2, "big"),
+                (entry.flags if type(entry.flags) == bytes else entry.flags.to_bytes(2, "big")  ),
             )
 
             file.write(struct.pack(">10I20s2s", *entry_tuple))
